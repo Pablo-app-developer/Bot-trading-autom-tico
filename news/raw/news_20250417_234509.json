@@ -1,0 +1,45 @@
+{
+  "status": "ok",
+  "totalResults": 3,
+  "articles": [
+    {
+      "source": {
+        "id": null,
+        "name": "BusinessLine"
+      },
+      "author": "Gurumurthy K",
+      "title": "Currency Outlook: Dollar trumped",
+      "description": "Dollar index outlook, 10Yr Treasury Yield rise, euro bullish breakout, and Indian Rupee support and resistance levels analyzed.",
+      "url": "https://www.thehindubusinessline.com/portfolio/technical-analysis/currency-outlook-dollar-trumped/article69442486.ece",
+      "urlToImage": "https://bl-i.thgim.com/public/news/pa4bdr/article69443669.ece/alternates/LANDSCAPE_1200/dollar.jpg",
+      "publishedAt": "2025-04-12T16:56:27Z",
+      "content": "The dollar index was knocked down badly last week. Indeed, it fell below the psychological mark of 100 on Friday to hit 99.01, the lowest level seen since July 2023. However, it has managed to rise b… [+2527 chars]"
+    },
+    {
+      "source": {
+        "id": null,
+        "name": "Finextra"
+      },
+      "author": "Editorial Team",
+      "title": "Is the U.S. already in a recession? A closer examination (Prakash Bhudia)",
+      "description": "Economic discussions in the United States have increasingly revolved around one pivotal question: Ar...",
+      "url": "https://www.finextra.com/blogposting/28261/is-the-us-already-in-a-recession-a-closer-examination",
+      "urlToImage": "https://www.finextra.com/finextra-images/member_photos/thumb_161197_prakash_bhudia_19.jpg",
+      "publishedAt": "2025-04-10T08:19:27Z",
+      "content": "Economic discussions in the United States have increasingly revolved around one pivotal question: Are we already experiencing a recession or merely\r\n bracing for a downturn that has yet to emerge ful… [+5388 chars]"
+    },
+    {
+      "source": {
+        "id": null,
+        "name": "Stockcharts.com"
+      },
+      "author": "Jayanthi Gopalakrishnan",
+      "title": "Investors on the Move: A Visual Guide to the Stock Market",
+      "description": "Another interesting week in the stock market comes to an end. The past few days were flooded with the twists and turns of President Trump's reciprocal tariffs, which were later put on a 90-day pause except for China, which got hit with higher tariffs. Then ca…",
+      "url": "https://stockcharts.com/articles/chartwatchers/2025/04/investors-on-the-move-a-visual-961.html",
+      "urlToImage": "https://stockcharts.com/img/articles/2025/04/11/c7af4e04-09ac-4c47-bf74-31f078043afc.jpg",
+      "publishedAt": "2025-04-11T23:30:06Z",
+      "content": "<ul><li>Declining equities, bonds, and the US dollar is making Wall Street nervous.</li><li>Investors will need to look at market price action through the lens of macro factors.</li><li>View longer-t… [+6930 chars]"
+    }
+  ]
+}
