@@ -1,7 +1,7 @@
 import MetaTrader5 as mt5
 import pandas as pd
 import numpy as np
-import talib
+import ta
 import os
 import datetime
 import time
@@ -125,54 +125,44 @@ class MetaTraderAPI:
         df_with_indicators = df.copy()
         
         # Calcular RSI (Relative Strength Index)
-        df_with_indicators['rsi_14'] = talib.RSI(df_with_indicators['close'], timeperiod=14)
+        df_with_indicators['rsi_14'] = ta.momentum.RSIIndicator(df_with_indicators['close'], window=14).rsi()
         
         # Calcular MACD (Moving Average Convergence Divergence)
-        macd, macd_signal, _ = talib.MACD(df_with_indicators['close'], 
-                                         fastperiod=12, 
-                                         slowperiod=26, 
-                                         signalperiod=9)
-        df_with_indicators['macd'] = macd
-        df_with_indicators['macd_signal'] = macd_signal
+        macd_indicator = ta.trend.MACD(df_with_indicators['close'], window_slow=26, window_fast=12, window_sign=9)
+        df_with_indicators['macd'] = macd_indicator.macd()
+        df_with_indicators['macd_signal'] = macd_indicator.macd_signal()
         
         # Calcular Bandas de Bollinger
-        upper, middle, lower = talib.BBANDS(df_with_indicators['close'], 
-                                           timeperiod=20, 
-                                           nbdevup=2, 
-                                           nbdevdn=2)
-        df_with_indicators['bollinger_upper'] = upper
-        df_with_indicators['bollinger_mid'] = middle
-        df_with_indicators['bollinger_lower'] = lower
+        bollinger = ta.volatility.BollingerBands(df_with_indicators['close'], window=20, window_dev=2)
+        df_with_indicators['bollinger_upper'] = bollinger.bollinger_hband()
+        df_with_indicators['bollinger_mid'] = bollinger.bollinger_mavg()
+        df_with_indicators['bollinger_lower'] = bollinger.bollinger_lband()
         
         # ATR (Average True Range)
-        df_with_indicators['atr_14'] = talib.ATR(df_with_indicators['high'], 
+        df_with_indicators['atr_14'] = ta.volatility.AverageTrueRange(df_with_indicators['high'], 
                                                 df_with_indicators['low'], 
                                                 df_with_indicators['close'], 
-                                                timeperiod=14)
+                                                window=14).average_true_range()
         
         # CCI (Commodity Channel Index)
-        df_with_indicators['cci_14'] = talib.CCI(df_with_indicators['high'], 
+        df_with_indicators['cci_14'] = ta.trend.CCIIndicator(df_with_indicators['high'], 
                                                df_with_indicators['low'], 
                                                df_with_indicators['close'], 
-                                               timeperiod=14)
+                                               window=14).cci()
         
         # ADX (Average Directional Index)
-        df_with_indicators['adx_14'] = talib.ADX(df_with_indicators['high'], 
+        df_with_indicators['adx_14'] = ta.trend.ADXIndicator(df_with_indicators['high'], 
                                                df_with_indicators['low'], 
                                                df_with_indicators['close'], 
-                                               timeperiod=14)
+                                               window=14).adx()
         
         # Stochastic
-        stoch_k, stoch_d = talib.STOCH(df_with_indicators['high'], 
+        stoch = ta.momentum.StochasticOscillator(df_with_indicators['high'], 
                                      df_with_indicators['low'], 
                                      df_with_indicators['close'], 
-                                     fastk_period=14, 
-                                     slowk_period=3, 
-                                     slowk_matype=0, 
-                                     slowd_period=3, 
-                                     slowd_matype=0)
-        df_with_indicators['stoch_k'] = stoch_k
-        df_with_indicators['stoch_d'] = stoch_d
+                                     window=14, smooth_window=3)
+        df_with_indicators['stoch_k'] = stoch.stoch()
+        df_with_indicators['stoch_d'] = stoch.stoch_signal()
         
         # Eliminar filas con valores NaN (por los indicadores que requieren datos históricos)
         df_with_indicators = df_with_indicators.dropna()
