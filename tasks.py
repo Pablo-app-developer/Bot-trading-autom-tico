@@ -50,7 +50,7 @@ def predict(ctx, continuous=False):
     """Ejecuta el sistema de predicción."""
     if continuous:
         logging.info("Iniciando predicciones continuas...")
-        ctx.run("python -c \"from src.predict import ejecutar_prediccion_continua; ejecutar_prediccion_continua('data/model/modelo_clasificacion.pkl', intervalo_segundos=30)\"")
+        ctx.run("python -c \"import sys; sys.path.append('src'); from predict import ejecutar_prediccion_continua; ejecutar_prediccion_continua('data/model/modelo_clasificacion.pkl', intervalo_segundos=30)\"")
     else:
         logging.info("Ejecutando predicción única...")
         run_script(ctx, "src/predict.py")
@@ -77,5 +77,5 @@ def production(ctx):
 def install_dependencies(ctx):
     """Instala las dependencias necesarias para el proyecto."""
     logging.info("Instalando dependencias...")
-    ctx.run("pip install pandas numpy scikit-learn joblib xgboost MetaTrader5 ta-lib")
+    ctx.run("pip install pandas numpy scikit-learn joblib xgboost MetaTrader5 ta")
     logging.info("Dependencias instaladas correctamente.")

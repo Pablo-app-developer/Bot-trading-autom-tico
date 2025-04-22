@@ -4,7 +4,10 @@ import joblib
 import os
 import datetime
 import time
-from fetch_metatrader_data import MetaTraderAPI, obtener_ultima_fila
+import sys
+# Agregar el directorio src al path para importar correctamente
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src.fetch_metatrader_data import MetaTraderAPI, obtener_ultima_fila
 
 def cargar_modelo(ruta_modelo):
     """
