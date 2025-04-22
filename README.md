@@ -1,4 +1,3 @@
-
 # 🤖 Bot de Trading Automático EUR/USD
 
 Este proyecto implementa un sistema profesional de trading automático para el par de divisas **EUR/USD**, integrando análisis de noticias, procesamiento de datos y futura toma de decisiones mediante inteligencia artificial.
@@ -32,6 +31,8 @@ eurusd_bot/
 - Entorno virtual (`venv`)
 - Acceso a [https://newsapi.org](https://newsapi.org) con API Key
 - Git instalado y configurado
+- MetaTrader 5 instalado y configurado
+- Cuenta de trading (demo o real) con acceso a EUR/USD
 
 ---
 
@@ -98,4 +99,95 @@ python src/fetch_news.py
 Ingeniero Industrial, entusiasta del trading algorítmico y la programación en Python.
 
 ---
+
+# Bot de Trading EUR/USD
+
+Sistema de predicción para el par EUR/USD utilizando aprendizaje automático. Este bot obtiene datos desde MetaTrader 5, aplica indicadores técnicos, y predice la dirección del mercado (subida, bajada o neutral).
+
+## Instalación
+
+1. Clonar este repositorio
+2. Instalar las dependencias:
+
+```bash
+cd eurusd_bot
+invoke install_dependencies
+```
+
+Nota: La instalación de TA-Lib puede ser complicada en algunos sistemas. Si tiene problemas, consulte las [instrucciones específicas de instalación de TA-Lib](https://github.com/mrjbq7/ta-lib).
+
+## Configuración
+
+1. Asegúrese que MetaTrader 5 esté instalado y en ejecución
+2. Verifique que tenga acceso al par EUR/USD en su cuenta
+
+## Uso del Sistema
+
+### Preparación del modelo
+
+Para entrenar el modelo desde cero:
+
+```bash
+invoke all
+```
+
+Esto ejecutará todo el pipeline: limpieza, preprocesamiento, división de datos y entrenamiento.
+
+### Obtención de datos en tiempo real
+
+Para obtener datos recientes de MetaTrader:
+
+```bash
+invoke fetch_live
+```
+
+### Predicciones
+
+Para realizar una predicción única:
+
+```bash
+invoke predict
+```
+
+Para ejecutar predicciones continuas (cada 30 segundos):
+
+```bash
+invoke predict --continuous
+```
+
+### Modo producción
+
+Para ejecutar el sistema en modo producción:
+
+```bash
+invoke production
+```
+
+## Estructura del sistema
+
+- `src/`: Código fuente
+  - `fetch_metatrader_data.py`: Obtiene datos de MetaTrader 5
+  - `preprocessing.py`: Preprocesamiento de datos históricos
+  - `train_model.py`: Entrena el modelo XGBoost
+  - `predict.py`: Realiza predicciones usando el modelo entrenado
+  - `split_data.py`: Divide los datos en conjuntos de entrenamiento y prueba
+- `data/`: Datos del sistema
+  - `processed/`: Datos procesados
+  - `model/`: Modelo entrenado y datos para entrenamiento
+  - `market/`: Datos en tiempo real y predicciones
+- `tasks.py`: Tareas automatizadas (usando invoke)
+
+## Notas importantes
+
+1. El sistema está configurado por defecto para usar simulación. Para usar datos reales de MetaTrader, cambie `usar_simulacion = True` a `False` en el archivo `src/predict.py`.
+
+2. Para un rendimiento óptimo, asegúrese de tener MetaTrader 5 abierto y conectado a su broker mientras usa el sistema.
+
+3. Este sistema es solo con fines educativos. No se recomienda su uso para trading real sin pruebas exhaustivas.
+
+## Personalización
+
+- Puede modificar los indicadores técnicos en `src/fetch_metatrader_data.py`
+- Los parámetros del modelo se pueden ajustar en `src/train_model.py`
+- Para cambiar el intervalo de tiempo, modifique el parámetro `timeframe` en `src/fetch_metatrader_data.py`
 

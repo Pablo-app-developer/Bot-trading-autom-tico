@@ -4,12 +4,14 @@ import joblib
 import os
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, accuracy_score, f1_score
+from sklearn.preprocessing import LabelEncoder
+import xgboost as xgb
 
 def entrenar_modelo(ruta_entrada_dir, ruta_salida_dir, random_state=42):
     """
-    Entrena un modelo de clasificación Random Forest y guarda el modelo
+    Entrena un modelo de clasificación XGBoost y guarda el modelo
     """
-    print("Entrenando modelo de clasificación...")
+    print("Entrenando modelo XGBoost...")
     
     # Verificar que los archivos existen
     x_train_path = os.path.join(ruta_entrada_dir, 'X_train.csv')
@@ -26,15 +28,34 @@ def entrenar_modelo(ruta_entrada_dir, ruta_salida_dir, random_state=42):
     X_test = pd.read_csv(x_test_path)
     y_test = pd.read_csv(y_test_path).values.ravel()
     
+    # Transformar etiquetas para XGBoost: [-1, 0, 1] -> [0, 1, 2]
+    label_encoder = LabelEncoder()
+    y_train_encoded = label_encoder.fit_transform(y_train)
+    y_test_encoded = label_encoder.transform(y_test)
+    
+    # Guardar el codificador de etiquetas para su uso posterior
+    label_map = {original: transformed for original, transformed in zip(label_encoder.classes_, range(len(label_encoder.classes_)))}
+    print(f"Mapa de transformación de etiquetas: {label_map}")
+    
     # Crear directorio de salida si no existe
     os.makedirs(ruta_salida_dir, exist_ok=True)
     
-    # Entrenar modelo
-    model = RandomForestClassifier(n_estimators=100, random_state=random_state)
-    model.fit(X_train, y_train)
+    # Entrenar modelo XGBoost
+    model = xgb.XGBClassifier(
+        n_estimators=100,
+        learning_rate=0.1,
+        max_depth=5,
+        random_state=random_state,
+        use_label_encoder=False,
+        eval_metric='mlogloss'
+    )
+    
+    model.fit(X_train, y_train_encoded)
     
     # Evaluar modelo
-    y_pred = model.predict(X_test)
+    y_pred_encoded = model.predict(X_test)
+    y_pred = label_encoder.inverse_transform(y_pred_encoded)  # Convertir de vuelta a etiquetas originales
+    
     accuracy = accuracy_score(y_test, y_pred)
     f1 = f1_score(y_test, y_pred, average='weighted')
     
@@ -45,22 +66,20 @@ def entrenar_modelo(ruta_entrada_dir, ruta_salida_dir, random_state=42):
     
     # Guardar modelo
     modelo_path = os.path.join(ruta_salida_dir, 'modelo_clasificacion.pkl')
-    joblib.dump(model, modelo_path)
+    joblib.dump({
+        'model': model,
+        'label_encoder': label_encoder
+    }, modelo_path)
     
     # Guardar métricas
-    metricas = {
-        'accuracy': accuracy,
-        'f1_score': f1,
-        'feature_importance': dict(zip(X_train.columns, model.feature_importances_))
-    }
-    
-    # Guardar en formato legible
     with open(os.path.join(ruta_salida_dir, 'metricas.txt'), 'w') as f:
         f.write(f"Precisión: {accuracy:.4f}\n")
         f.write(f"F1-Score: {f1:.4f}\n\n")
         f.write("Importancia de características:\n")
-        for feature, importance in sorted(zip(X_train.columns, model.feature_importances_), 
-                                         key=lambda x: x[1], reverse=True):
+        importance_scores = model.feature_importances_
+        feature_importance = sorted(zip(X_train.columns, importance_scores), 
+                               key=lambda x: x[1], reverse=True)
+        for feature, importance in feature_importance:
             f.write(f"{feature}: {importance:.4f}\n")
     
     print(f"Entrenamiento finalizado. Modelo guardado en {modelo_path}")

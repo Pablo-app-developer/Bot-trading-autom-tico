@@ -45,7 +45,37 @@ def train(ctx):
     """Entrena el modelo con los datos procesados y lo guarda."""
     run_script(ctx, "src/train_model.py")
 
+@task
+def predict(ctx, continuous=False):
+    """Ejecuta el sistema de predicción."""
+    if continuous:
+        logging.info("Iniciando predicciones continuas...")
+        ctx.run("python -c \"from src.predict import ejecutar_prediccion_continua; ejecutar_prediccion_continua('data/model/modelo_clasificacion.pkl', intervalo_segundos=30)\"")
+    else:
+        logging.info("Ejecutando predicción única...")
+        run_script(ctx, "src/predict.py")
+
+@task
+def fetch_live(ctx):
+    """Obtiene datos en tiempo real de MetaTrader y los guarda."""
+    logging.info("Obteniendo datos en tiempo real de MetaTrader...")
+    run_script(ctx, "src/fetch_metatrader_data.py")
+
 @task(pre=[clean, preprocess, split, train])
 def all(ctx):
     """Ejecuta todo el pipeline completo: limpieza, preprocesamiento, split y entrenamiento."""
     logging.info("Pipeline completo ejecutado correctamente.")
+
+@task(pre=[train])
+def production(ctx):
+    """Prepara y ejecuta el sistema para predicciones en producción."""
+    logging.info("Iniciando sistema de predicción en modo producción...")
+    run_script(ctx, "src/predict.py")
+    logging.info("Para predicciones continuas, use 'invoke predict --continuous'")
+
+@task
+def install_dependencies(ctx):
+    """Instala las dependencias necesarias para el proyecto."""
+    logging.info("Instalando dependencias...")
+    ctx.run("pip install pandas numpy scikit-learn joblib xgboost MetaTrader5 ta-lib")
+    logging.info("Dependencias instaladas correctamente.")
