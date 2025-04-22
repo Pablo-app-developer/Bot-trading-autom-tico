@@ -1,4 +1,14 @@
+# .gitignore
+
+# Entorno virtual
 venv/
 __pycache__/
-.env
 *.pyc
+
+# Archivos de configuración privada
+.env
+
+# Datos y salidas generadas
+data/
+news/raw/
+logs/

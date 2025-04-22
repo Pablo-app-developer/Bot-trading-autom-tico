@@ -53,7 +53,7 @@ load_dotenv()
 API_KEY = os.getenv("NEWS_API_KEY")
 
 if not API_KEY:
-    raise Exception("❌ ERROR: No se encontró la clave API. Verifica tu archivo .env")
+    raise Exception("ERROR: No se encontró la clave API. Verifica tu archivo .env")
 
 print(f"🔑 Clave API cargada: {API_KEY[:5]}...")  # Solo muestra los primeros caracteres
 
