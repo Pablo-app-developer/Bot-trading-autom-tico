@@ -3,6 +3,7 @@ from src.trading_bot import TradingBot
 from dotenv import load_dotenv
 import os
 import sys
+import argparse
 
 # Crear directorio de logs si no existe
 os.makedirs('logs', exist_ok=True)
@@ -20,6 +21,16 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def main():
+    # Configurar argumentos de línea de comandos
+    parser = argparse.ArgumentParser(description='Bot de Trading para MetaTrader 5')
+    parser.add_argument('--symbol', type=str, default='EURUSD', help='Símbolo para operar (por defecto: EURUSD)')
+    parser.add_argument('--risk', type=float, default=2.0, help='Porcentaje de riesgo por operación (por defecto: 2.0%%)')
+    parser.add_argument('--sl', type=int, default=50, help='Stop loss en pips (por defecto: 50)')
+    parser.add_argument('--manual-lot', type=float, help='Tamaño de lote fijo (si no se especifica, se calcula automáticamente)')
+    parser.add_argument('--max-lot', type=float, default=1.0, help='Tamaño máximo de lote permitido (por defecto: 1.0)')
+    
+    args = parser.parse_args()
+    
     # Cargar variables de entorno
     load_dotenv()
     
@@ -32,21 +43,20 @@ def main():
     try:
         # Inicializar y ejecutar el bot
         bot = TradingBot(
-            symbol='EURUSD'  # Par de divisas
+            symbol=args.symbol,
+            risk_percent=args.risk,
+            max_lot_size=args.max_lot
         )
         
-        # Verificar si se pasó un tamaño de lote como argumento
-        lot_size = 0.01  # Valor predeterminado
-        if len(sys.argv) > 1:
-            try:
-                lot_size = float(sys.argv[1])
-                logger.info(f"Usando tamaño de lote personalizado: {lot_size}")
-            except ValueError:
-                logger.warning(f"Valor de lote inválido: {sys.argv[1]}. Usando valor predeterminado: {lot_size}")
+        logger.info(f"Iniciando bot con símbolo: {args.symbol}, riesgo: {args.risk}%, stop loss: {args.sl} pips")
+        if args.manual_lot:
+            logger.info(f"Usando tamaño de lote manual: {args.manual_lot}")
+        else:
+            logger.info("Calculando tamaño de lote automáticamente en base al riesgo y balance")
         
-        # Ejecutar el bot con el tamaño de lote especificado
+        # Ejecutar el bot
         try:
-            bot.run(lot_size=lot_size)
+            bot.run(lot_size=args.manual_lot, stop_loss_pips=args.sl)
         except KeyboardInterrupt:
             logger.info("Bot detenido por el usuario")
         finally:
