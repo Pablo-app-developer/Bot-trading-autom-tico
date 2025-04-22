@@ -16,13 +16,15 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class TradingBot:
-    def __init__(self, symbol='EURUSD'):
+    def __init__(self, symbol='EURUSD', risk_percent=2.0, max_lot_size=1.0):
         self.symbol = symbol
         self.model = TradingModel()
         self.position = None
         self.last_trade_time = None
         self.min_trade_interval = timedelta(minutes=15)
         self.initialized = False
+        self.risk_percent = risk_percent  # Porcentaje de la cuenta a arriesgar por operación
+        self.max_lot_size = max_lot_size  # Tamaño máximo de lote permitido
         
     def initialize(self):
         """
@@ -150,7 +152,65 @@ class TradingBot:
             logger.error(f"Error al obtener el balance: {str(e)}")
             return None
     
-    def execute_trade(self, decision, lot_size=0.01):
+    def calculate_lot_size(self, stop_loss_pips=50):
+        """
+        Calcula el tamaño del lote basado en el balance de la cuenta, el riesgo y el stop loss
+        
+        Args:
+            stop_loss_pips (int): Distancia del stop loss en pips
+            
+        Returns:
+            float: Tamaño del lote calculado
+        """
+        if not self.initialized and not self.initialize():
+            return 0.01  # Valor mínimo por defecto
+            
+        try:
+            # Obtener información de la cuenta
+            account_info = mt5.account_info()
+            if account_info is None:
+                logger.error("No se pudo obtener información de la cuenta")
+                return 0.01
+                
+            # Obtener información del símbolo
+            symbol_info = mt5.symbol_info(self.symbol)
+            if symbol_info is None:
+                logger.error(f"No se pudo obtener información del símbolo {self.symbol}")
+                return 0.01
+                
+            # Obtener el balance y calcular la cantidad a arriesgar
+            balance = account_info.balance
+            risk_amount = balance * (self.risk_percent / 100)
+            
+            # Obtener el valor del pip
+            # Para la mayoría de pares, 1 pip = 0.0001, excepto JPY donde 1 pip = 0.01
+            digit_multiplier = 10000 if symbol_info.digits in [4, 2] else 100
+            pip_value = symbol_info.trade_tick_value * (digit_multiplier / symbol_info.point)
+            
+            # Calcular el valor de un pip en la moneda de la cuenta
+            one_pip_value = pip_value / digit_multiplier
+            
+            # Calcular el tamaño del lote basado en el riesgo y el stop loss
+            lot_size = risk_amount / (stop_loss_pips * one_pip_value)
+            
+            # Ajustar al tamaño de lote mínimo y máximo
+            min_lot = symbol_info.volume_min
+            max_lot = min(symbol_info.volume_max, self.max_lot_size)
+            step = symbol_info.volume_step
+            
+            # Redondear al step más cercano
+            lot_size = round(max(min(lot_size, max_lot), min_lot) / step) * step
+            
+            logger.info(f"Balance: {balance}, Riesgo: {risk_amount}, Stop Loss: {stop_loss_pips} pips")
+            logger.info(f"Tamaño de lote calculado: {lot_size}")
+            
+            return lot_size
+            
+        except Exception as e:
+            logger.error(f"Error al calcular el tamaño del lote: {str(e)}")
+            return 0.01  # Valor predeterminado seguro
+    
+    def execute_trade(self, decision, lot_size=None, stop_loss_pips=50):
         """
         Ejecuta una operación de trading en MetaTrader
         """
@@ -158,6 +218,10 @@ class TradingBot:
             return
             
         try:
+            # Si no se proporciona un tamaño de lote, calcularlo automáticamente
+            if lot_size is None:
+                lot_size = self.calculate_lot_size(stop_loss_pips)
+                
             # Cerrar posiciones existentes primero si cambiamos de dirección
             current_position = self.get_current_position()
             
@@ -176,6 +240,15 @@ class TradingBot:
             price = mt5.symbol_info_tick(self.symbol).ask if decision == "COMPRA" else mt5.symbol_info_tick(self.symbol).bid
             deviation = 20  # Desviación en puntos
             
+            # Calcular niveles de stop loss y take profit si se desea
+            sl_price = 0
+            tp_price = 0
+            
+            if stop_loss_pips > 0:
+                sl_price = price - stop_loss_pips * point * 10 if decision == "COMPRA" else price + stop_loss_pips * point * 10
+                # 2:1 risk/reward ratio para take profit
+                tp_price = price + (stop_loss_pips * 2) * point * 10 if decision == "COMPRA" else price - (stop_loss_pips * 2) * point * 10
+            
             # Configuración de la solicitud
             request = {
                 "action": mt5.TRADE_ACTION_DEAL,
@@ -183,6 +256,8 @@ class TradingBot:
                 "volume": lot_size,
                 "type": mt5.ORDER_TYPE_BUY if decision == "COMPRA" else mt5.ORDER_TYPE_SELL,
                 "price": price,
+                "sl": sl_price,
+                "tp": tp_price,
                 "deviation": deviation,
                 "magic": 12345,  # ID para identificar operaciones del bot
                 "comment": "Bot Trading Operación",
@@ -197,7 +272,7 @@ class TradingBot:
                 logger.error(f"Error al ejecutar la operación: {result.retcode}, {result.comment}")
                 return
                 
-            logger.info(f"Orden de {'compra' if decision == 'COMPRA' else 'venta'} ejecutada: {result.order}")
+            logger.info(f"Orden de {'compra' if decision == 'COMPRA' else 'venta'} ejecutada: {result.order}, Lote: {lot_size}")
             self.position = "LONG" if decision == "COMPRA" else "SHORT"
             self.last_trade_time = datetime.now()
             
@@ -246,11 +321,16 @@ class TradingBot:
         except Exception as e:
             logger.error(f"Error al cerrar posiciones: {str(e)}")
     
-    def run(self, lot_size=0.01):
+    def run(self, lot_size=None, risk_percent=None, stop_loss_pips=50):
         """
         Ejecuta el bot de trading
         """
         logger.info("Iniciando bot de trading para MetaTrader 5...")
+        
+        # Actualizar el porcentaje de riesgo si se proporciona
+        if risk_percent is not None:
+            self.risk_percent = risk_percent
+            logger.info(f"Porcentaje de riesgo configurado a {self.risk_percent}%")
         
         # Inicializar conexión a MetaTrader
         if not self.initialize():
@@ -292,7 +372,7 @@ class TradingBot:
                 
                 # Ejecutar operación si es necesario
                 if decision != "MANTENER":
-                    self.execute_trade(decision, lot_size)
+                    self.execute_trade(decision, lot_size=lot_size, stop_loss_pips=stop_loss_pips)
                 
                 # Esperar antes de la siguiente iteración
                 time.sleep(60)  # Esperar 1 minuto
