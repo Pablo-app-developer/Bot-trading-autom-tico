@@ -28,4 +28,4 @@ def hacer_push():
 if __name__ == "__main__":
     while True:
         hacer_push()
-        time.sleep(15)  # Verifica cada 15 segundos
+        time.sleep(300)  # Verifica cada 300 segundos
